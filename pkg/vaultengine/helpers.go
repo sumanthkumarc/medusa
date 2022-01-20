@@ -18,7 +18,7 @@ func IsFolder(p string) bool {
 }
 
 // ConvertToYaml will return the Folder object as yaml
-func ConvertToYaml(folder Folder) ([]byte, error) {
+func ConvertToYaml(folder []Folder) ([]byte, error) {
 	yaml, err := yaml.Marshal(folder)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func ConvertToYaml(folder Folder) ([]byte, error) {
 }
 
 // ConvertToJSON will return the Folder object as yaml
-func ConvertToJSON(folder Folder) ([]byte, error) {
+func ConvertToJSON(folder []Folder) ([]byte, error) {
 	json, err := json.MarshalIndent(folder, "", "\t")
 	// json, err := json.Marshal(folder)
 	if err != nil {

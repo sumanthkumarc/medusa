@@ -1,4 +1,4 @@
-module github.com/jonasvinther/medusa
+module github.com/sumanthkumarc/medusa
 
 go 1.13
 

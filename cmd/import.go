@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/jonasvinther/medusa/pkg/encrypt"
-	"github.com/jonasvinther/medusa/pkg/importer"
-	"github.com/jonasvinther/medusa/pkg/vaultengine"
 	"strings"
+
+	"github.com/sumanthkumarc/medusa/pkg/encrypt"
+	"github.com/sumanthkumarc/medusa/pkg/importer"
+	"github.com/sumanthkumarc/medusa/pkg/vaultengine"
 
 	"github.com/spf13/cobra"
 )

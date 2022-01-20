@@ -3,8 +3,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/jonasvinther/medusa/pkg/encrypt"
-	"github.com/jonasvinther/medusa/pkg/vaultengine"
+	"sync"
+	"time"
+
+	"github.com/sumanthkumarc/medusa/pkg/encrypt"
+	"github.com/sumanthkumarc/medusa/pkg/vaultengine"
 
 	"github.com/spf13/cobra"
 )
@@ -34,29 +37,82 @@ var exportCmd = &cobra.Command{
 		exportFormat, _ := cmd.Flags().GetString("format")
 		output, _ := cmd.Flags().GetString("output")
 
+		engine, path := vaultengine.PathSplitPrefix(path)
 		client := vaultengine.NewClient(vaultAddr, vaultToken, insecure, namespace)
-		engine, path, err := client.MountpathSplitPrefix(path)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-
 		client.UseEngine(engine)
 		client.SetEngineType(engineType)
 
-		exportData, err := client.FolderExport(path)
-		if err != nil {
-			fmt.Println(err)
-			return err
+		// var exportData vaultengine.Folder
+		var err error
+		var folders []vaultengine.Folder
+		start := time.Now()
+
+		if path == "/" {
+			mounts := client.GetMounts()
+			// var mounts = map[string]string{
+			// 	"lastmile/":     "kv1",
+			// 	"dse/":          "kv1",
+			// 	"authplatform/": "kv1",
+			// 	"consumer/":     "kv1",
+			// }
+
+			// This channel is used to send export data from goroutines.
+			channel := make(chan (vaultengine.Folder))
+
+			// Done is a channel to signal the main thread that all the mounts have been processed.
+			done := make(chan (bool), 1)
+
+			// Collate all incoming folders from the channel.
+			go func() {
+				for folder := range channel {
+					folders = append(folders, folder)
+				}
+
+				// Signal the main thread that all the folders were added.
+				done <- true
+			}()
+
+			var wg sync.WaitGroup
+			wg.Add(len(mounts))
+
+			// Create multiple parallel threads for each mount
+			for path, Type := range mounts {
+
+				go func(path string, Type string) {
+					client.SetEngineType(Type)
+					exportData, _ := client.FolderExport(path)
+					if exportData != nil {
+						channel <- exportData
+					}
+					//  Send empty key when sub-folders arent present.
+
+					defer wg.Done()
+				}(path, Type)
+			}
+
+			wg.Wait()
+			close(channel)
+
+			// Wait for collation of all the folders
+			<-done
+			close(done)
+
+		} else {
+			exportData, err := client.FolderExport(path)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			folders = append(folders, exportData)
 		}
 
 		// Convert export to json or yaml
 		var data []byte
 		switch exportFormat {
 		case "json":
-			data, err = vaultengine.ConvertToJSON(exportData)
+			data, err = vaultengine.ConvertToJSON(folders)
 		case "yaml":
-			data, err = vaultengine.ConvertToYaml(exportData)
+			data, err = vaultengine.ConvertToYaml(folders)
 		default:
 			fmt.Printf("Wrong format '%s' specified. Available formats are yaml and json.\n", exportFormat)
 			err = errors.New("invalid export format")
@@ -66,6 +122,8 @@ var exportCmd = &cobra.Command{
 			fmt.Println(err)
 			return err
 		}
+
+		fmt.Printf("Execution took %v\n", time.Since(start))
 
 		if doEncrypt {
 			publicKeyPath, _ := cmd.Flags().GetString("public-key")

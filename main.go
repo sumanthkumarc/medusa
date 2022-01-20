@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/jonasvinther/medusa/cmd"
 	"os"
+
+	"github.com/sumanthkumarc/medusa/cmd"
 )
 
 func main() {

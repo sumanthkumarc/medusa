@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/jonasvinther/medusa/pkg/vaultengine"
+	"github.com/sumanthkumarc/medusa/pkg/vaultengine"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
