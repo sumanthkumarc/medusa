@@ -19,7 +19,7 @@ func (client *Client) FolderRead(path string) ([]interface{}, error) {
 		return nil, err
 	}
 
-	if secret == nil {
+	if secret == nil || secret.Data["keys"] == nil {
 		return nil, fmt.Errorf("no keys found using path [%s] on Vault instance [%s]", finalPath, client.addr)
 	}
 
